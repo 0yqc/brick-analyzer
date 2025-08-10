@@ -29,8 +29,7 @@ def gen_rb_usertoken() -> str:
 
 currency_converter = CurrencyConverter()
 
-with open('./rb_api_key.txt', 'r') as file:
-	rb_api_key = file.read().strip()
+rb_api_key = input('Enter your Rebrickable API key: ').strip()
 
 # Input
 
@@ -92,11 +91,18 @@ url = 'https://www.bricklink.com/catalogPG.asp?S=' + set_num + '-1'
 response = requests.get(url, headers = {'User-Agent':'py requests lib'})
 if response.status_code == 200:  # success
 	html = response.content.decode()  # whole website
-	bl_sales_average_raw = list(re.findall('(>Avg Price:)(.*?)([A-Z]{3})(.*?\.[0-9]{2,4})', html)[1][2:4])  # regex to find all average prices, then filter out the correct match, converted to an array for editing; [2:4]: results 2 to 3
-	bl_sales_average_raw[1] = re.sub(',', '', bl_sales_average_raw[1])  # remove thousands separation
-	bl_sales_average_raw[1] = bl_sales_average_raw[1].removeprefix('&nbsp;')  # remove leading non-breaking space
-	print('BrickLink sales average: ' + bl_sales_average_raw[0] + ' ' + bl_sales_average_raw[1])
-	bl_sales_average = currency_converter.convert(bl_sales_average_raw[1], bl_sales_average_raw[0], 'USD')  # convert raw data into USD
+	try:
+		usd_specific_price = re.findall('(>Avg Price:)(.*?)(US)(.*?\.[0-9]{2,4})', html)[1][3]
+	except IndexError:
+		usd_specific_price = None
+	if usd_specific_price:
+		bl_sales_average = usd_specific_price
+	else:
+		bl_sales_average_raw = list(re.findall('(>Avg Price:)(.*?)([A-Z]{3})(.*?\.[0-9]{2,4})', html)[1][2:4])  # regex to find all average prices, then filter out the correct match, converted to an array for editing; [1]: first result, [2:4] brackets 3 and 4
+		bl_sales_average_raw[1] = re.sub(',', '', bl_sales_average_raw[1])  # remove thousands separation
+		bl_sales_average_raw[1] = bl_sales_average_raw[1].removeprefix('&nbsp;')  # remove leading non-breaking space
+		print('BrickLink sales average: ' + bl_sales_average_raw[0] + ' ' + bl_sales_average_raw[1])
+		bl_sales_average = currency_converter.convert(bl_sales_average_raw[1], bl_sales_average_raw[0], 'USD')  # convert raw data into USD
 	print('BrickLink sales average: USD ' + str(round(bl_sales_average, 2)) + '$')
 	print('BrickLink sales average is ' + str(round(bl_sales_average / price, 2)) + '× your price')
 else:
@@ -119,7 +125,6 @@ if not answer.lower().strip('\n y'):  # answer: y or blank
 			exit()
 	else:
 		print('RB Error: Could not retrieve build results (Bad HTTP status code:' + str(response.status_code) + ').')
-		exit()
 	print('You already own ' + str(round(rb_pct_owned,2)) + '% of the pieces in this set.')
 	print('You are missing ' + str(round(100-rb_pct_owned,2)) + '% of the pieces in this set.')
 	print('You are missing ' + str(rb_missing) + ' pieces from this set.')
