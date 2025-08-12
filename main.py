@@ -96,7 +96,7 @@ if response.status_code == 200:  # success
 	except IndexError:
 		usd_specific_price = None
 	if usd_specific_price:
-		bl_sales_average = usd_specific_price
+		bl_sales_average = float(usd_specific_price.replace(',','').removeprefix('&nbsp;'))
 	else:
 		bl_sales_average_raw = list(re.findall('(>Avg Price:)(.*?)([A-Z]{3})(.*?\.[0-9]{2,4})', html)[1][2:4])  # regex to find all average prices, then filter out the correct match, converted to an array for editing; [1]: first result, [2:4] brackets 3 and 4
 		bl_sales_average_raw[1] = re.sub(',', '', bl_sales_average_raw[1])  # remove thousands separation
